@@ -1,0 +1,31 @@
+# One-click deploy on Render (https://render.com): New > Blueprint > pick this repo.
+# Create a free MongoDB Atlas cluster first and paste its connection string as MONGO_URI.
+services:
+  - type: web
+    name: localfix
+    runtime: node
+    plan: starter
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: 22
+      - key: JWT_SECRET
+        generateValue: true
+      - key: MONGO_URI
+        sync: false
+      - key: APP_URL
+        sync: false
+      - key: AUTO_SEED
+        value: 'true'
+      - key: UPLOAD_DIR
+        value: /var/data/uploads
+      - key: PRIVATE_UPLOAD_DIR
+        value: /var/data/uploads-private
+    disk:
+      name: localfix-uploads
+      mountPath: /var/data
+      sizeGB: 1

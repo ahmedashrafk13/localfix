@@ -1,0 +1,10 @@
+{
+  "name": "LocalFix",
+  "short_name": "LocalFix",
+  "description": "Local repair pros compete for your job.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f4f4f5",
+  "theme_color": "#c2410c",
+  "icons": [{ "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}

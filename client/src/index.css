@@ -1,0 +1,260 @@
+@import 'tailwindcss';
+@import '@fontsource-variable/plus-jakarta-sans';
+@import '@fontsource-variable/bricolage-grotesque';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+  LocalFix design tokens.
+  Neutrals: cool zinc. One accent: "hard-hat" orange. Semantic colours only for status.
+  Shape system: interactive buttons are full pills, cards are 20px, form fields are 12px.
+  Z-index scale: nav 30, dropdown 40, modal 50, toast 60.
+*/
+:root {
+  --bg: #f4f4f5;
+  --surface: #ffffff;
+  --surface-2: #fafafa;
+  --surface-3: #f0f0f2;
+  --ink: #18181b;
+  --ink-2: #3f3f46;
+  --muted: #52525b;
+  --line: #e4e4e7;
+  --line-strong: #d4d4d8;
+
+  --accent: #c2410c; /* button background, 5.2:1 with white */
+  --accent-hover: #9a3412;
+  --on-accent: #ffffff;
+  --accent-text: #b13a0a; /* accent used as text on light surfaces */
+  --accent-soft: #fff1e7;
+  --accent-ring: rgb(194 65 12 / 0.35);
+
+  --success: #15803d;
+  --success-soft: #ecfdf3;
+  --warning: #a16207;
+  --warning-soft: #fefbe8;
+  --danger: #b91c1c;
+  --danger-soft: #fef2f2;
+  --info: #1d4ed8;
+  --info-soft: #eff6ff;
+
+  --shadow-color: 240 6% 10%;
+  color-scheme: light;
+}
+
+.dark {
+  --bg: #0f0f11;
+  --surface: #18181b;
+  --surface-2: #1c1c20;
+  --surface-3: #232328;
+  --ink: #f4f4f5;
+  --ink-2: #d4d4d8;
+  --muted: #a1a1aa;
+  --line: #2a2a30;
+  --line-strong: #3f3f46;
+
+  --accent: #f97316; /* dark text on this accent, 7:1 */
+  --accent-hover: #fb923c;
+  --on-accent: #18181b;
+  --accent-text: #fb923c;
+  --accent-soft: rgb(249 115 22 / 0.13);
+  --accent-ring: rgb(249 115 22 / 0.45);
+
+  --success: #4ade80;
+  --success-soft: rgb(74 222 128 / 0.12);
+  --warning: #facc15;
+  --warning-soft: rgb(250 204 21 / 0.12);
+  --danger: #f87171;
+  --danger-soft: rgb(248 113 113 / 0.12);
+  --info: #93c5fd;
+  --info-soft: rgb(147 197 253 / 0.12);
+
+  --shadow-color: 0 0% 0%;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-on-accent: var(--on-accent);
+  --color-accent-text: var(--accent-text);
+  --color-accent-soft: var(--accent-soft);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+}
+
+@theme {
+  --font-sans: 'Plus Jakarta Sans Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Bricolage Grotesque Variable', 'Plus Jakarta Sans Variable', ui-sans-serif, sans-serif;
+  --radius-card: 1.25rem;
+  --radius-field: 0.75rem;
+  --ease-spring: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --breakpoint-xs: 26rem;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+  }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100dvh;
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display);
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+    text-wrap: balance;
+  }
+  p {
+    text-wrap: pretty;
+  }
+  a,
+  button,
+  [role='button'],
+  summary,
+  label[for],
+  select {
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+  button:disabled {
+    cursor: not-allowed;
+  }
+  :focus-visible {
+    outline: 3px solid var(--accent-ring);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+  ::selection {
+    background: var(--accent-soft);
+    color: var(--ink);
+  }
+  img {
+    max-width: 100%;
+  }
+  input[type='time']::-webkit-calendar-picker-indicator,
+  input[type='date']::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+  }
+  .dark input[type='time']::-webkit-calendar-picker-indicator,
+  .dark input[type='date']::-webkit-calendar-picker-indicator {
+    filter: invert(0.85);
+  }
+}
+
+@layer components {
+  .shadow-soft {
+    box-shadow:
+      0 1px 2px hsl(var(--shadow-color) / 0.05),
+      0 12px 32px -16px hsl(var(--shadow-color) / 0.14);
+  }
+  .shadow-lift {
+    box-shadow:
+      0 2px 4px hsl(var(--shadow-color) / 0.05),
+      0 28px 56px -28px hsl(var(--shadow-color) / 0.3);
+  }
+  /* Double-bezel frame: an outer tray with an inner core, for hero media and feature panels. */
+  .bezel {
+    padding: 0.4rem;
+    border-radius: 1.75rem;
+    background: color-mix(in oklab, var(--ink) 5%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--ink) 6%, transparent);
+  }
+  .bezel > * {
+    border-radius: calc(1.75rem - 0.4rem);
+  }
+  .container-page {
+    width: 100%;
+    max-width: 80rem;
+    margin-inline: auto;
+    padding-inline: 1rem;
+  }
+  @media (min-width: 640px) {
+    .container-page {
+      padding-inline: 1.5rem;
+    }
+  }
+  @media (min-width: 1024px) {
+    .container-page {
+      padding-inline: 2rem;
+    }
+  }
+  .prose-lf h2 {
+    font-size: 1.35rem;
+    font-weight: 700;
+    margin: 2rem 0 0.75rem;
+  }
+  .prose-lf p {
+    margin: 0 0 1rem;
+    color: var(--ink-2);
+  }
+  .prose-lf ul {
+    margin: 0 0 1rem;
+    padding-left: 1.25rem;
+    list-style: disc;
+    color: var(--ink-2);
+  }
+  .prose-lf li {
+    margin: 0.35rem 0;
+  }
+  .scrollbar-none {
+    scrollbar-width: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Leaflet (map) tweaks for both themes. */
+
+.leaflet-container {
+  font-family: var(--font-sans);
+  background: var(--surface-3);
+  border-radius: inherit;
+  z-index: 0;
+}
+.dark .leaflet-tile-pane {
+  filter: brightness(0.75) contrast(1.1) saturate(0.8);
+}
+.leaflet-control-attribution {
+  font-size: 10px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
