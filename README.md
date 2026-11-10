@@ -29,7 +29,7 @@ Open **http://localhost:5173**.
 | `npm run build` | Installs everything and builds the React app into `client/dist` |
 | `npm start` | Production-style: one Express server on :5000 serves the API, Socket.IO and the built React app |
 | `npm run seed` | Wipes the database and reloads the sample data. This also works while the server is running. |
-| `npm test` | 19 end-to-end API tests on a throwaway in-memory database |
+| `npm test` | 53 API and unit tests on a throwaway in-memory database, with no outside network calls |
 
 ## Sample accounts
 
@@ -85,6 +85,37 @@ Extras that support the proposal:
 - **Support.** Contact form with an admin support inbox, plus FAQ, Safety, Terms and Privacy pages.
 - **Privacy rights.** "Download my data" (JSON export) and "Delete account" in Settings.
 
+## APIs and integrations
+
+LocalFix is built on a documented REST API and on open third-party services. None of them needs an account or a key, so everything below works straight after `npm run dev`.
+
+| Service | What LocalFix uses it for | Where |
+|---|---|---|
+| **Photon** (Komoot, OpenStreetMap data) | Address search as you type in "Post a request" | `server/src/integrations/geocoding.js`, `AddressSearch.jsx` |
+| **Nominatim** (OpenStreetMap) | "Use my location": GPS position to street address, city and area | `integrations/geocoding.js`, `PostRequest.jsx` |
+| **OSRM** | Driving distance, travel time and the route line a provider sees for a job | `integrations/routing.js`, `TravelCard.jsx` |
+| **Open-Meteo** | 7-day forecast at the job, with a warning when weather may delay outdoor work | `integrations/weather.js`, `Weather.jsx` |
+| **Claude API** (optional, needs `ANTHROPIC_API_KEY`) | Request assistant: a rough description becomes a category, title, urgency and the questions providers will ask. Without a key a built-in rule engine gives the same kind of answer. | `services/assistant.js`, `AssistantPanel.jsx` |
+| **Web Push** (VAPID) | Notifications for offers and messages when LocalFix is closed | `services/push.js`, `client/public/sw.js` |
+
+How they are built:
+
+- **Proxied by the server.** The browser never calls a third party, so the Content-Security-Policy stays closed and one cache serves every user.
+- **One resilient client** (`integrations/upstream.js`) gives each service a timeout, one retry with backoff, a TTL and LRU cache with stale-if-error, a circuit breaker, a rate-limit throttle (Nominatim allows 1 request per second) and metrics.
+- **A failure is a fallback.** If OSRM is down, the provider still gets a straight-line estimate marked as an estimate. If the forecast is down, the weather card is simply not shown.
+- **Private by design.** Weather lookups use coordinates rounded to about 1 km. A provider who is not hired is routed to the public area circle, never to the house. Push endpoints are restricted to real browser push services to block server-side request forgery.
+- **Observable.** Admin > Integrations shows calls, cache hit rate, latency and breaker state for each service. `/api/health` reports the database and every breaker.
+
+Other platform features:
+
+- **Interactive API reference** at `/api/docs` (self-hosted Swagger UI) and the OpenAPI 3.1 document at `/api/openapi.json`. A test walks the real Express routers and fails if a route is missing from the document or documented but absent.
+- **Versioned API**: `/api/v1` (with `/api` as an alias), and an `X-Request-Id` on every response.
+- **Price guide** from the marketplace's own data (`GET /api/insights/price`): the middle range of accepted offers per category, shown when a customer sets a budget and when a provider prices an offer.
+- **Add to calendar**: a booked job downloads as an iCalendar file (`GET /api/requests/:id/calendar.ics`).
+- **Installable, offline-capable app (PWA)**: a service worker caches the app shell and pages you have opened, and an offline banner appears when the connection drops.
+- **Browser APIs**: Service Worker, Cache, Push, Notifications, Geolocation, Web Speech (dictate a problem), Web Share, Clipboard.
+- The public page `/developers` summarises all of this for visitors.
+
 ### Non-functional requirements
 
 | NFR | How it is met |
@@ -128,7 +159,10 @@ localfix/
 │   │   ├── models/         User, Category, ServiceRequest, Offer, Conversation, Message,
 │   │   │                   Review, Notification, Report, Tip, ContactMessage, AnalyticsEvent
 │   │   ├── routes/         auth, users, requests, offers, providers, conversations,
-│   │   │                   notifications, reports, dashboard, admin, public
+│   │   │                   notifications, reports, dashboard, admin, public,
+│   │   │                   geo, assistant, insights, push, integrations, docs
+│   │   ├── integrations/   resilient client + Photon, Nominatim, OSRM, Open-Meteo
+│   │   ├── docs/           OpenAPI 3.1 document
 │   │   ├── middleware/     auth (RBAC), validation, uploads, security, errors
 │   │   ├── services/       notifications, marketplace rules (counters, ratings, chat notes)
 │   │   ├── socket/         Socket.IO auth, rooms, typing, presence
@@ -136,7 +170,7 @@ localfix/
 │   │   └── utils/          serializers (privacy rules), tokens, mailer, helpers
 │   ├── seed-assets/        sample photos (CC licensed, see CREDITS.md)
 │   ├── seed-private/       fake sample ID document (never served publicly)
-│   └── tests/api.test.js
+│   └── tests/              api, platform and upstream test files
 └── client/                 React 19 + Vite + Tailwind CSS v4
     └── src/
         ├── pages/          Home, auth, PostRequest, BrowseRequests, RequestDetails, Providers,
@@ -158,7 +192,7 @@ localfix/
 
 ## API overview
 
-All endpoints are under `/api`. JSON is used in and out, and photos use multipart. Every state-changing call needs the `X-Requested-With` header.
+The full, always-current reference is at `/api/docs`. All endpoints are under `/api/v1` (alias `/api`). JSON is used in and out, and photos use multipart. Every state-changing call needs the `X-Requested-With` header.
 
 | Area | Endpoints |
 |---|---|
@@ -168,6 +202,7 @@ All endpoints are under `/api`. JSON is used in and out, and photos use multipar
 | Offers | `GET/POST /requests/:id/offers`, `GET /offers/mine`, `PATCH /offers/:id`, `POST /offers/:id/withdraw`, `POST /offers/:id/accept` |
 | Providers | `GET /providers`, `GET /providers/:id`, `GET /providers/:id/reviews`, `PATCH /providers/me`, `PUT /providers/me/availability`, `POST/DELETE /providers/me/gallery`, `POST /providers/me/verification`, `POST /reviews/:id/reply` |
 | Chat | `GET/POST /conversations`, `GET /conversations/:id`, `GET/POST /conversations/:id/messages`, `POST /conversations/:id/read` |
+| Platform | `GET /geo/search`, `/geo/reverse`, `/geo/weather`; `GET /requests/:id/weather`, `/route`, `/calendar.ics`; `POST /assistant/describe`; `GET /insights/price`; `GET /push/public-key`, `GET/POST/DELETE /push/subscriptions`, `POST /push/test`; `GET /admin/integrations`; `GET /openapi.json`, `/docs` |
 | Other | `GET /notifications`, `POST /notifications/read-all`, `POST /reports`, `GET /dashboard/customer`, `GET /dashboard/provider`, `GET /categories`, `GET /meta`, `GET /stats/public`, `GET /tips`, `GET /tips/:slug`, `POST /contact`, `POST /analytics/events`, `GET /health` |
 | Admin | `GET /admin/stats`, users, verifications (+ document), reports, requests (remove/restore), reviews (hide), messages (delete), categories CRUD, tips CRUD, inbox |
 
@@ -187,6 +222,12 @@ LocalFix is a single Node service.
    `JWT_SECRET` is generated for you. The empty database is seeded with the sample data on first start.
 4. **Optional: real emails.** Set `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` and `MAIL_FROM`. Without SMTP, email verification is switched off in production, and emails are written to the server log.
 
+5. **Optional: AI assistant.** Set `ANTHROPIC_API_KEY` to have the request assistant use the Claude API. Web Push needs HTTPS, which Render provides.
+
+**Docker.** `docker compose up --build` starts MongoDB and the app on http://localhost:5000 (see `Dockerfile` and `docker-compose.yml`).
+
+**CI.** `.github/workflows/ci.yml` runs the tests and builds the client on every push and pull request.
+
 Any other Node host (Railway, a VPS with PM2, and so on) works with the same steps:
 
 ```bash
@@ -200,7 +241,7 @@ All settings are documented in `server/.env.example`.
 
 ## Testing
 
-- `npm test` runs 19 API tests against a fresh in-memory MongoDB with the real seed data. They cover:
+- `npm test` runs 53 tests against a fresh in-memory MongoDB with the real seed data. Third-party APIs are replaced by a fake network, so the suite never touches the internet. They cover:
   - privacy of addresses;
   - CSRF and NoSQL-injection protection;
   - RBAC;
@@ -209,9 +250,14 @@ All settings are documented in `server/.env.example`.
   - reports and moderation;
   - suspension ending sessions;
   - password reset;
-  - account deletion.
+  - account deletion;
+  - the third-party client: caching, retry, timeout, stale-if-error and the circuit breaker;
+  - geocoding, weather advice and routing, including the route privacy rule and the offline fallback;
+  - the request assistant: rule engine, Claude answer, and fallback on refusal or error;
+  - Web Push: the request-forgery guard, delivery to offline users and pruning of dead subscriptions;
+  - calendar export, price insights, `/api/v1`, request ids and the OpenAPI contract.
 - The full UI was also tested in a real browser (Playwright) across customer, provider and admin journeys, on desktop and mobile, in light and dark mode, with no console errors and no failed requests.
 
 ## Credits
 
-The sample photos are Creative Commons or CC0 images from Flickr, rawpixel and StockSnap, found through Openverse. Portraits come from randomuser.me. Full attribution is in `server/seed-assets/CREDITS.md`. The map uses © OpenStreetMap contributors. Icons are by Phosphor Icons.
+The sample photos are Creative Commons or CC0 images from Flickr, rawpixel and StockSnap, found through Openverse. Portraits come from randomuser.me. Full attribution is in `server/seed-assets/CREDITS.md`. The map, address search (Photon, Nominatim) and routing (OSRM) use data © OpenStreetMap contributors. Weather data by Open-Meteo.com (CC BY 4.0). Icons are by Phosphor Icons.

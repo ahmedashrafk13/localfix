@@ -3,7 +3,7 @@
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { useEffect, useMemo } from 'react';
-import { Circle, CircleMarker, MapContainer, Marker, Popup, TileLayer, useMap, useMapEvents } from 'react-leaflet';
+import { Circle, CircleMarker, MapContainer, Marker, Polyline, Popup, TileLayer, useMap, useMapEvents } from 'react-leaflet';
 import { Link } from 'react-router';
 import { pkr } from '../lib/format.js';
 
@@ -25,8 +25,20 @@ function Recenter({ lat, lng, zoom }) {
   return null;
 }
 
-/** Shows where a job is. Non-privileged viewers get a ~1 km circle instead of the exact pin. */
-export function LocationMap({ lat, lng, approximate, className = 'h-64' }) {
+/** Zooms out just enough to show the whole route once it arrives. */
+function FitRoute({ points }) {
+  const map = useMap();
+  useEffect(() => {
+    if (points?.length > 1) map.fitBounds(L.latLngBounds(points), { padding: [28, 28], animate: true });
+  }, [points, map]);
+  return null;
+}
+
+/**
+ * Shows where a job is. Non-privileged viewers get a ~1 km circle instead of the exact pin.
+ * `route` (a list of [lat, lng] pairs) draws the drive from `origin` to the job.
+ */
+export function LocationMap({ lat, lng, approximate, route, origin, className = 'h-64' }) {
   return (
     <div className={`overflow-hidden rounded-card border border-line ${className}`}>
       <MapContainer center={[lat, lng]} zoom={approximate ? 13 : 15} scrollWheelZoom={false} className="size-full" attributionControl>
@@ -36,6 +48,14 @@ export function LocationMap({ lat, lng, approximate, className = 'h-64' }) {
         ) : (
           <Marker position={[lat, lng]} icon={pinIcon} />
         )}
+        {route?.length > 1 && (
+          <>
+            <Polyline positions={route} pathOptions={{ color: '#ffffff', weight: 8, opacity: 0.9 }} />
+            <Polyline positions={route} pathOptions={{ color: '#1d4ed8', weight: 4, opacity: 0.95 }} />
+            <FitRoute points={route} />
+          </>
+        )}
+        {origin && <CircleMarker center={[origin.lat, origin.lng]} radius={7} pathOptions={{ color: '#ffffff', weight: 2, fillColor: '#1d4ed8', fillOpacity: 1 }} />}
       </MapContainer>
     </div>
   );

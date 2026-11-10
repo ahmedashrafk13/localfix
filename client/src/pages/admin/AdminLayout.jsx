@@ -3,6 +3,7 @@ import {
   ClipboardTextIcon,
   FlagIcon,
   IdentificationCardIcon,
+  PlugsConnectedIcon,
   ArticleIcon,
   SquaresFourIcon,
   StarIcon,
@@ -23,6 +24,7 @@ const NAV = [
   { to: '/admin/categories', label: 'Categories', icon: SquaresFourIcon },
   { to: '/admin/tips', label: 'Tips (content)', icon: ArticleIcon },
   { to: '/admin/inbox', label: 'Support inbox', icon: TrayIcon, badge: 'openInbox' },
+  { to: '/admin/integrations', label: 'Integrations', icon: PlugsConnectedIcon },
 ];
 
 export default function AdminLayout() {

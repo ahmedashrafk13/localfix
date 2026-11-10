@@ -8,6 +8,7 @@ import {
   Message,
   Notification,
   Offer,
+  PushSubscription,
   Report,
   Review,
   ServiceRequest,
@@ -110,7 +111,7 @@ router.delete('/me', validate(z.object({ password: z.string().min(1, 'Enter your
   await removeUpload(user.avatar);
   for (const g of user.provider?.gallery || []) await removeUpload(g.url);
 
-  await Promise.all([Notification.deleteMany({ user: id }), Report.deleteMany({ reporter: id, status: 'open' })]);
+  await Promise.all([Notification.deleteMany({ user: id }), PushSubscription.deleteMany({ user: id }), Report.deleteMany({ reporter: id, status: 'open' })]);
   await User.deleteOne({ _id: id });
   disconnectUser(id);
   clearSessionCookie(res);

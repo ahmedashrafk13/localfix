@@ -59,7 +59,8 @@ export function errorHandler(err, req, res, next) {
     message = status === 404 ? 'Not found.' : err.expose ? err.message : 'Bad request.';
   }
 
-  if (status >= 500 && !env.isTest) console.error('[error]', err);
+  // Unexpected failures are logged with the request id. A deliberate 503 (upstream down) is not a bug.
+  if (status >= 500 && !(err instanceof HttpError) && !env.isTest) console.error(`[error] ${req.id || '-'} ${req.method} ${req.originalUrl}`, err);
 
-  res.status(status).json({ error: { message, ...(details ? { fields: details } : {}) } });
+  res.status(status).json({ error: { message, ...(details ? { fields: details } : {}), ...(status >= 500 && req.id ? { requestId: req.id } : {}) } });
 }

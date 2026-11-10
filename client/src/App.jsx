@@ -38,6 +38,7 @@ const AdminReviews = lazy(() => import('./pages/admin/Reviews.jsx'));
 const AdminCategories = lazy(() => import('./pages/admin/Categories.jsx'));
 const AdminTips = lazy(() => import('./pages/admin/Tips.jsx'));
 const AdminInbox = lazy(() => import('./pages/admin/Inbox.jsx'));
+const AdminIntegrations = lazy(() => import('./pages/admin/Integrations.jsx'));
 
 const HowItWorks = lazy(() => import('./pages/help/HowItWorks.jsx'));
 const Faq = lazy(() => import('./pages/help/Faq.jsx'));
@@ -48,6 +49,7 @@ const Terms = lazy(() => import('./pages/help/Terms.jsx'));
 const Privacy = lazy(() => import('./pages/help/Privacy.jsx'));
 const Tips = lazy(() => import('./pages/help/Tips.jsx'));
 const TipDetail = lazy(() => import('./pages/help/TipDetail.jsx'));
+const Developers = lazy(() => import('./pages/help/Developers.jsx'));
 const NotFound = lazy(() => import('./pages/NotFound.jsx'));
 
 export default function App() {
@@ -103,6 +105,7 @@ export default function App() {
             <Route path="categories" element={<AdminCategories />} />
             <Route path="tips" element={<AdminTips />} />
             <Route path="inbox" element={<AdminInbox />} />
+            <Route path="integrations" element={<AdminIntegrations />} />
           </Route>
         </Route>
 
@@ -115,6 +118,7 @@ export default function App() {
         <Route path="privacy" element={<Privacy />} />
         <Route path="tips" element={<Tips />} />
         <Route path="tips/:slug" element={<TipDetail />} />
+        <Route path="developers" element={<Developers />} />
         <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>

@@ -8,9 +8,14 @@ import { AuthProvider } from './context/AuthContext.jsx';
 import { RealtimeProvider } from './context/RealtimeContext.jsx';
 import { ThemeProvider } from './context/ThemeContext.jsx';
 import { ToastProvider } from './context/ToastContext.jsx';
+import { registerServiceWorker } from './lib/push.js';
 import './index.css';
 
 const loadMotionFeatures = () => import('./lib/motionFeatures.js').then((mod) => mod.default);
+
+// Offline app shell and Web Push. Only in production builds: in development a service worker
+// would cache Vite's hot-reload modules.
+if (import.meta.env.PROD) window.addEventListener('load', registerServiceWorker);
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

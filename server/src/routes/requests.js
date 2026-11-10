@@ -158,7 +158,7 @@ router.get('/mine', requireRole('customer'), async (req, res) => {
   res.json(pageResult(docs.map((d) => serializeRequest(d, req.user)), total, pg));
 });
 
-async function loadRequest(id, { lean = false } = {}) {
+export async function loadRequest(id, { lean = false } = {}) {
   assertObjectId(id, 'Request');
   const query = ServiceRequest.findById(id)
     .populate('category')
@@ -169,7 +169,7 @@ async function loadRequest(id, { lean = false } = {}) {
   return doc;
 }
 
-async function canView(r, user) {
+export async function canView(r, user) {
   if (user?.role === 'admin') return true;
   if (user && sameId(r.customer, user._id)) return true;
   if (r.removed) return false;

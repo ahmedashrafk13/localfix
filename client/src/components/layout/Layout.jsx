@@ -4,6 +4,7 @@ import { Outlet, useLocation } from 'react-router';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useToast } from '../../context/ToastContext.jsx';
 import { api, trackEvent } from '../../lib/api.js';
+import { OfflineBanner } from '../platform/OfflineBanner.jsx';
 import { Button } from '../ui/Button.jsx';
 import { InlineAlert } from '../ui/States.jsx';
 import { Footer } from './Footer.jsx';
@@ -80,6 +81,7 @@ export function Layout() {
       <a href="#main" className="sr-only z-[70] rounded-full bg-accent px-4 py-2 font-semibold text-on-accent focus:not-sr-only focus:fixed focus:left-4 focus:top-4">
         Skip to content
       </a>
+      <OfflineBanner />
       <Header />
       <VerifyEmailBanner />
       <main id="main" className="flex-1 pb-24 md:pb-0">

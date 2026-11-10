@@ -58,4 +58,23 @@ export const env = {
   REQUIRE_EMAIL_VERIFICATION: flag('REQUIRE_EMAIL_VERIFICATION', hasSmtp || !isProd),
   // Dev-only convenience: return verification/reset links in API responses. Never enabled in production.
   EXPOSE_DEV_LINKS: !isProd,
+
+  // --- Third-party APIs (all keyless and optional; see src/integrations) ---
+  // Master switch for outbound calls. Off in tests so the suite never depends on the internet.
+  EXTERNAL_APIS: flag('EXTERNAL_APIS', !isTest),
+  PHOTON_URL: process.env.PHOTON_URL || 'https://photon.komoot.io',
+  NOMINATIM_URL: process.env.NOMINATIM_URL || 'https://nominatim.openstreetmap.org',
+  OSRM_URL: process.env.OSRM_URL || 'https://router.project-osrm.org',
+  OPEN_METEO_URL: process.env.OPEN_METEO_URL || 'https://api.open-meteo.com',
+  // Identifies this app to OpenStreetMap services, as their usage policy requires.
+  OUTBOUND_USER_AGENT: process.env.OUTBOUND_USER_AGENT || 'LocalFix/2.0 (CS 313 Web Engineering student project)',
+
+  // --- AI request assistant (optional). Without a key the built-in rule engine answers instead. ---
+  ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY || '',
+  AI_MODEL: process.env.AI_MODEL || 'claude-opus-5-5',
+
+  // --- Web Push (optional). Without keys a VAPID key pair is generated once and stored in the database. ---
+  VAPID_PUBLIC_KEY: process.env.VAPID_PUBLIC_KEY || '',
+  VAPID_PRIVATE_KEY: process.env.VAPID_PRIVATE_KEY || '',
+  VAPID_SUBJECT: process.env.VAPID_SUBJECT || 'mailto:support@localfix.test',
 };

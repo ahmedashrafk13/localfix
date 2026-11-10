@@ -1,0 +1,7 @@
+body{margin:0;background:#fafafa}
+.lf-bar{display:flex;align-items:center;gap:1rem;padding:.75rem 1.25rem;background:#18181b;color:#e4e4e7;font:600 15px/1.2 system-ui,sans-serif}
+.lf-bar a{color:#fff;text-decoration:none}
+.lf-bar a:hover,.lf-bar a:focus-visible{text-decoration:underline}
+.lf-home{font-weight:800;font-size:17px}
+.lf-spec{margin-left:auto;font-weight:500;color:#fdba74!important}
+.swagger-ui .topbar{display:none}

@@ -1,6 +1,7 @@
 import { CameraIcon, DesktopIcon, DownloadSimpleIcon, MoonIcon, SunIcon, TrashIcon } from '@phosphor-icons/react';
 import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
+import { NotificationsCard } from '../components/platform/NotificationsCard.jsx';
 import { Avatar } from '../components/ui/Avatar.jsx';
 import { Badge } from '../components/ui/Badge.jsx';
 import { Button } from '../components/ui/Button.jsx';
@@ -267,6 +268,7 @@ export default function Settings() {
       <PageHeader title="Account settings" description="Manage your profile, security and data." />
       <div className="space-y-6">
         <ProfileCard />
+        <NotificationsCard />
         <PasswordCard />
         <AppearanceCard />
         <PrivacyCard />

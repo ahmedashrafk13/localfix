@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { api, onUnauthorized } from '../lib/api.js';
+import { disablePush } from '../lib/push.js';
 
 const AuthContext = createContext(null);
 
@@ -41,6 +42,8 @@ export function AuthProvider({ children }) {
 
   const logout = useCallback(async () => {
     try {
+      // A signed-out browser must stop receiving this account's notifications.
+      await disablePush();
       await api.post('/auth/logout');
     } finally {
       setUser(null);

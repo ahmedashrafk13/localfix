@@ -1,6 +1,7 @@
 import {
   ArrowLeftIcon,
   CalendarBlankIcon,
+  CalendarPlusIcon,
   ChatCircleDotsIcon,
   CheckCircleIcon,
   ClockIcon,
@@ -10,6 +11,7 @@ import {
   PencilSimpleIcon,
   PhoneIcon,
   ShieldCheckIcon,
+  ShareNetworkIcon,
   SignInIcon,
   WarningIcon,
   XCircleIcon,
@@ -19,6 +21,8 @@ import { Link, useNavigate, useParams } from 'react-router';
 import { LocationMap } from '../components/LazyMaps.jsx';
 import { OfferComparison } from '../components/OfferComparison.jsx';
 import { OfferForm } from '../components/OfferForm.jsx';
+import { TravelCard } from '../components/platform/TravelCard.jsx';
+import { WeatherCard } from '../components/platform/Weather.jsx';
 import { ReportButton } from '../components/ReportDialog.jsx';
 import { ReviewCard } from '../components/ReviewCard.jsx';
 import { Avatar } from '../components/ui/Avatar.jsx';
@@ -271,6 +275,7 @@ function OwnerPanel({ r, reload, offersKey }) {
               <Button variant="secondary" icon={ChatCircleDotsIcon} onClick={chat}>
                 Message
               </Button>
+              {r.status === 'assigned' && <CalendarLink requestId={r.id} />}
               {r.status === 'assigned' && !r.providerMarkedDoneAt && (
                 <Button variant="success" icon={CheckCircleIcon} onClick={() => setConfirmDone(true)}>
                   Job is done
@@ -413,6 +418,7 @@ function ProviderPanel({ r, reload }) {
               <Button variant="secondary" icon={ChatCircleDotsIcon} onClick={openChat}>
                 Message customer
               </Button>
+              {r.status === 'assigned' && <CalendarLink requestId={r.id} />}
               {r.status === 'assigned' &&
                 (r.providerMarkedDoneAt ? (
                   <p className="inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-success">
@@ -501,7 +507,7 @@ function ProviderPanel({ r, reload }) {
         }
       />
       {verified ? (
-        <OfferForm initial={editing ? offer : undefined} onSubmit={send} onCancel={editing ? () => setEditing(false) : undefined} submitLabel={editing ? 'Save changes' : 'Send offer'} busy={busy} />
+        <OfferForm categorySlug={r.category?.slug} initial={editing ? offer : undefined} onSubmit={send} onCancel={editing ? () => setEditing(false) : undefined} submitLabel={editing ? 'Save changes' : 'Send offer'} busy={busy} />
       ) : (
         <InlineAlert tone="warning" icon={ShieldCheckIcon} title="Verification required" action={<ButtonLink to="/provider/profile#verification" size="sm" variant="secondary">Verify now</ButtonLink>}>
           {user.provider?.verification?.status === 'pending'
@@ -510,6 +516,20 @@ function ProviderPanel({ r, reload }) {
         </InlineAlert>
       )}
     </Card>
+  );
+}
+
+/** Downloads the booked job as an .ics file (GET /api/requests/:id/calendar.ics) for any calendar app. */
+function CalendarLink({ requestId }) {
+  return (
+    <a
+      href={`/api/requests/${requestId}/calendar.ics`}
+      download
+      className="inline-flex min-h-11 items-center gap-2 rounded-full border border-line-strong bg-surface px-5 text-[0.95rem] font-semibold text-ink transition-colors hover:border-ink/30 hover:bg-surface-2"
+    >
+      <CalendarPlusIcon size={18} weight="bold" aria-hidden="true" />
+      Add to calendar
+    </a>
   );
 }
 
@@ -539,8 +559,23 @@ export default function RequestDetails() {
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
   const [busy, setBusy] = useState(false);
+  const [travel, setTravel] = useState(null);
   const r = data?.request;
   useDocumentTitle(r ? r.title : 'Request');
+
+  // Web Share API on phones, clipboard everywhere else.
+  const share = async () => {
+    const payload = { title: `LocalFix: ${r.title}`, text: `${r.category?.name || 'Repair'} job in ${r.location.area}, ${r.location.city}`, url: window.location.href };
+    try {
+      if (navigator.share) await navigator.share(payload);
+      else {
+        await navigator.clipboard.writeText(payload.url);
+        toast.success('Link copied. Paste it anywhere to share this request.');
+      }
+    } catch (err) {
+      if (err.name !== 'AbortError') toast.error('Could not share this request.');
+    }
+  };
 
   const refreshAll = useCallback(() => {
     reload();
@@ -633,6 +668,11 @@ export default function RequestDetails() {
               Cancel request
             </Button>
           )}
+          {r.status === 'open' && !r.removed && (
+            <Button variant="ghost" icon={ShareNetworkIcon} onClick={share}>
+              Share
+            </Button>
+          )}
           {user && !isOwner && <ReportButton targetType="request" targetId={r.id} label="Report" />}
         </div>
       </header>
@@ -691,7 +731,14 @@ export default function RequestDetails() {
 
         <aside className="space-y-5 lg:sticky lg:top-28 lg:self-start">
           <Card padded={false} className="overflow-hidden">
-            <LocationMap lat={r.location.lat} lng={r.location.lng} approximate={r.location.approximate} className="h-56 rounded-none border-0" />
+            <LocationMap
+              lat={r.location.lat}
+              lng={r.location.lng}
+              approximate={r.location.approximate}
+              route={travel?.route.geometry}
+              origin={travel?.from}
+              className="h-56 rounded-none border-0"
+            />
             <div className="p-5">
               <h2 className="font-bold text-ink">Location</h2>
               {privileged && r.location.address ? (
@@ -704,6 +751,12 @@ export default function RequestDetails() {
               {r.location.approximate && <p className="mt-2 text-xs text-muted">The circle shows the area only. The exact address is shared with the hired provider.</p>}
             </div>
           </Card>
+
+          {isProvider && !isOwner && ['open', 'assigned'].includes(r.status) && (
+            <TravelCard request={r} hasProfileLocation={Boolean(user.provider?.location)} onRoute={(route, from) => setTravel({ route, from })} />
+          )}
+
+          {['open', 'assigned'].includes(r.status) && <WeatherCard requestId={r.id} />}
 
           {!isOwner && (
             <Card>

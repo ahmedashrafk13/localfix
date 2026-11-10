@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import compression from 'compression';
@@ -39,6 +40,15 @@ export function createApp() {
     })
   );
   app.use(compression());
+
+  // Correlation id: echoed on every response and included in error bodies and server logs,
+  // so one failing request can be traced end to end. A caller-supplied id is kept if it is sane.
+  app.use((req, res, next) => {
+    const incoming = req.get('x-request-id');
+    req.id = incoming && /^[\w.-]{8,64}$/.test(incoming) ? incoming : crypto.randomUUID();
+    res.setHeader('X-Request-Id', req.id);
+    next();
+  });
   if (!env.isProd && !env.isTest) app.use(morgan('dev'));
 
   app.use(express.json({ limit: '200kb' }));
@@ -60,7 +70,8 @@ export function createApp() {
     })
   );
 
-  app.use('/api', apiLimiter, requireAjaxHeader, loadUser, api);
+  // The API is versioned: /api/v1 is the stable contract, /api is an alias the web client uses.
+  app.use(['/api/v1', '/api'], apiLimiter, requireAjaxHeader, loadUser, api);
   app.use('/api', apiNotFound);
 
   // Production: serve the built React app and let the client-side router handle deep links.
@@ -70,6 +81,8 @@ export function createApp() {
         index: false,
         setHeaders: (res, filePath) => {
           if (filePath.includes(`${path.sep}assets${path.sep}`)) res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+          // The browser must always re-check the service worker, or an update could never roll out.
+          if (path.basename(filePath) === 'sw.js') res.setHeader('Cache-Control', 'no-cache');
         },
       })
     );

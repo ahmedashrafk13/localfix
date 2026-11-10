@@ -13,6 +13,7 @@ export const unauthorized = (msg = 'Please log in to continue.') => new HttpErro
 export const forbidden = (msg = 'You do not have permission to do that.') => new HttpError(403, msg);
 export const notFound = (msg = 'Not found.') => new HttpError(404, msg);
 export const conflict = (msg) => new HttpError(409, msg);
+export const serviceUnavailable = (msg = 'This feature is temporarily unavailable.') => new HttpError(503, msg);
 
 export function isObjectId(value) {
   if (value instanceof mongoose.Types.ObjectId) return true;

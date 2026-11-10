@@ -1,13 +1,14 @@
 import { PaperPlaneTiltIcon } from '@phosphor-icons/react';
 import { useState } from 'react';
 import { ETA_OPTIONS } from '../lib/format.js';
+import { PriceGuide } from './platform/PriceGuide.jsx';
 import { Button } from './ui/Button.jsx';
 import { Checkbox, Field, Input, Select, Textarea } from './ui/Field.jsx';
 
 const WARRANTY = [0, 7, 15, 30, 90, 180, 365];
 
 /** Create or edit an offer: price, arrival time, what is included, warranty. */
-export function OfferForm({ initial, onSubmit, onCancel, submitLabel = 'Send offer', busy }) {
+export function OfferForm({ initial, onSubmit, onCancel, submitLabel = 'Send offer', busy, categorySlug }) {
   const [form, setForm] = useState({
     price: initial?.price ?? '',
     etaMinutes: initial?.etaMinutes ?? 60,
@@ -47,6 +48,7 @@ export function OfferForm({ initial, onSubmit, onCancel, submitLabel = 'Send off
 
   return (
     <form onSubmit={submit} noValidate className="space-y-5">
+      <PriceGuide categorySlug={categorySlug} audience="provider" />
       <div className="grid gap-5 sm:grid-cols-2">
         <Field label="Your price (Rs)" required error={errors.price} help="Total for the job, including labour.">
           {(p) => <Input {...p} type="number" inputMode="numeric" min="100" step="50" value={form.price} onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))} />}

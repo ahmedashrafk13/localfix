@@ -4,9 +4,11 @@ import { User } from '../models/User.js';
 import { emitToUser } from '../socket/index.js';
 import { dayKey } from '../utils/http.js';
 import { serializeNotification } from '../utils/serialize.js';
+import { sendPush } from './push.js';
 
 /**
- * Stores an in-app notification for each user and pushes it over the socket immediately.
+ * Stores an in-app notification for each user, pushes it over the socket immediately and, for
+ * users who are not connected, sends it as a Web Push notification to their registered browsers.
  * Failures are logged, never thrown: a notification problem must not break the main action.
  */
 export async function notify(userIds, { type = 'system', title, body = '', link = '' }) {
@@ -15,6 +17,8 @@ export async function notify(userIds, { type = 'system', title, body = '', link 
   try {
     const docs = await Notification.insertMany(ids.map((user) => ({ user, type, title, body: body.slice(0, 400), link })));
     for (const doc of docs) emitToUser(doc.user, 'notification:new', serializeNotification(doc));
+    // Users without LocalFix open get the same notification as a Web Push message (not awaited).
+    sendPush(ids, { title, body, link, tag: type }, { skipOnline: true });
   } catch (err) {
     console.error('[notify] failed:', err.message);
   }

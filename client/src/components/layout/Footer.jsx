@@ -26,6 +26,7 @@ const columns = [
     links: [
       { to: '/about', label: 'About us' },
       { to: '/contact', label: 'Contact support' },
+      { to: '/developers', label: 'API and integrations' },
       { to: '/terms', label: 'Terms of service' },
       { to: '/privacy', label: 'Privacy policy' },
     ],

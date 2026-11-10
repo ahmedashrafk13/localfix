@@ -13,6 +13,7 @@ import {
   Message,
   Notification,
   Offer,
+  PushSubscription,
   Report,
   Review,
   ServiceRequest,
@@ -37,7 +38,8 @@ import {
   TIPS,
 } from './data.js';
 
-const ALL_MODELS = [User, Category, ServiceRequest, Offer, Conversation, Message, Review, Notification, Report, Tip, ContactMessage, AnalyticsEvent];
+// PushSubscription rows point at users, so they are wiped with them. Setting (the Web Push key pair) is kept.
+const ALL_MODELS = [User, Category, ServiceRequest, Offer, Conversation, Message, Review, Notification, Report, Tip, ContactMessage, AnalyticsEvent, PushSubscription];
 
 /* ---------- helpers ---------- */
 

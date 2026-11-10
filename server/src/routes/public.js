@@ -1,7 +1,10 @@
 import { Router } from 'express';
+import mongoose from 'mongoose';
 import rateLimit from 'express-rate-limit';
 import { z } from 'zod';
 import { env } from '../config/env.js';
+import { API_VERSION } from '../docs/openapi.js';
+import { upstreamSnapshots } from '../integrations/upstream.js';
 import { CITIES } from '../config/places.js';
 import { validate } from '../middleware/validate.js';
 import { ContactMessage, Review, ServiceRequest, Tip, User } from '../models/index.js';
@@ -130,8 +133,21 @@ router.post(
   }
 );
 
-router.get('/health', async (req, res) => {
-  res.json({ ok: true, uptime: Math.round(process.uptime()), time: new Date() });
+const DB_STATES = { 0: 'disconnected', 1: 'connected', 2: 'connecting', 3: 'disconnected' };
+
+/** Liveness and readiness in one: 503 when the database is not connected, so a load balancer stops routing here. */
+router.get('/health', (req, res) => {
+  const database = DB_STATES[mongoose.connection.readyState] || 'disconnected';
+  const ok = database === 'connected';
+  res.set('Cache-Control', 'no-store');
+  res.status(ok ? 200 : 503).json({
+    ok,
+    version: API_VERSION,
+    uptime: Math.round(process.uptime()),
+    time: new Date(),
+    database,
+    integrations: Object.fromEntries(upstreamSnapshots().map((u) => [u.name, u.enabled ? u.breaker : 'disabled'])),
+  });
 });
 
 export default router;

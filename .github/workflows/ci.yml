@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            server/package-lock.json
+            client/package-lock.json
+      - name: Cache the MongoDB test binary
+        uses: actions/cache@v4
+        with:
+          path: server/node_modules/.cache/mongodb-memory-server
+          key: mongodb-memory-server-${{ runner.os }}
+      - run: npm ci
+      - run: npm --prefix server ci
+      - run: npm --prefix client ci
+      - name: API tests (in-memory MongoDB, no outside network calls)
+        run: npm test
+      - name: Build the web client
+        run: npm --prefix client run build

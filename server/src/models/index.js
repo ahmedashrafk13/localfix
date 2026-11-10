@@ -10,3 +10,5 @@ export { Report } from './Report.js';
 export { Tip } from './Tip.js';
 export { ContactMessage } from './ContactMessage.js';
 export { AnalyticsEvent } from './AnalyticsEvent.js';
+export { PushSubscription } from './PushSubscription.js';
+export { Setting } from './Setting.js';

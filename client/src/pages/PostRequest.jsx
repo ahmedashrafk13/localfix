@@ -2,6 +2,10 @@ import { ArrowLeftIcon, ArrowRightIcon, CheckIcon, CrosshairIcon, PaperPlaneTilt
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { ImagePicker } from '../components/ImagePicker.jsx';
+import { AddressSearch } from '../components/platform/AddressSearch.jsx';
+import { AssistantPanel } from '../components/platform/AssistantPanel.jsx';
+import { PriceGuide } from '../components/platform/PriceGuide.jsx';
+import { WeatherHint } from '../components/platform/Weather.jsx';
 import { LocationPicker } from '../components/LazyMaps.jsx';
 import { Button, ButtonLink } from '../components/ui/Button.jsx';
 import { Card } from '../components/ui/Card.jsx';
@@ -117,6 +121,32 @@ export default function PostRequest() {
 
   const set = (key) => (e) => setDraft((d) => ({ ...d, [key]: e.target.value }));
 
+  // Fills the form from the assistant's suggestion. The customer's own words become the description.
+  const applySuggestion = (s) => {
+    setDraft((d) => ({
+      ...d,
+      categoryId: s.category?.id || d.categoryId,
+      title: s.title.slice(0, 100),
+      description: d.description.trim().length >= 20 ? d.description : s.text.slice(0, 2000),
+      urgency: s.urgency,
+    }));
+    setErrors({});
+    toast.success('Details filled in. Add anything providers should know, then continue.');
+  };
+
+  // A place picked from address search, or found by GPS: move the pin and fill city, area and address.
+  const applyPlace = ({ lat, lng, address, match }) => {
+    setDraft((d) => ({
+      ...d,
+      lat,
+      lng,
+      ...(match ? { city: match.city, area: match.area } : {}),
+      address: d.address.trim() ? d.address : (address || '').slice(0, 200),
+    }));
+    setErrors((e) => ({ ...e, map: undefined, area: undefined, city: undefined }));
+    if (!match) toast.info('That spot is outside our current service area (Islamabad and Rawalpindi). Choose the nearest area below.');
+  };
+
   const useMyLocation = () => {
     if (!navigator.geolocation) {
       toast.error('Your browser does not support location.');
@@ -124,8 +154,16 @@ export default function PostRequest() {
     }
     setLocating(true);
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setDraft((d) => ({ ...d, lat: Math.round(pos.coords.latitude * 1e6) / 1e6, lng: Math.round(pos.coords.longitude * 1e6) / 1e6 }));
+      async (pos) => {
+        const lat = Math.round(pos.coords.latitude * 1e6) / 1e6;
+        const lng = Math.round(pos.coords.longitude * 1e6) / 1e6;
+        try {
+          // Reverse geocoding (OpenStreetMap Nominatim via our API) turns the GPS fix into an address.
+          const place = await api.get('/geo/reverse', { lat, lng });
+          applyPlace({ lat, lng, address: place.address, match: place.match });
+        } catch {
+          setDraft((d) => ({ ...d, lat, lng })); // the pin still moves if the address lookup is down
+        }
         setLocating(false);
       },
       () => {
@@ -222,6 +260,7 @@ export default function PostRequest() {
       <Card className="sm:p-8">
         {step === 0 && (
           <div className="space-y-6">
+            <AssistantPanel initialText={draft.description} onApply={applySuggestion} />
             <fieldset aria-describedby={errors.categoryId ? 'cat-error' : undefined}>
               <legend className="mb-3 text-sm font-semibold text-ink">
                 What do you need? <span className="text-danger" aria-hidden="true">*</span>
@@ -279,6 +318,7 @@ export default function PostRequest() {
               </p>
               <ImagePicker files={files} onChange={setFiles} max={5} error={errors.images} />
             </div>
+            <AddressSearch onPick={applyPlace} />
             <div className="grid gap-5 sm:grid-cols-2">
               <Field label="City" required error={errors.city}>
                 {(p) => (
@@ -342,11 +382,15 @@ export default function PostRequest() {
             <Field label="Preferred date" optional error={errors.preferredDate}>
               {(p) => <Input {...p} type="date" min={new Date().toISOString().slice(0, 10)} value={draft.preferredDate} onChange={set('preferredDate')} className="sm:max-w-xs" />}
             </Field>
+            <WeatherHint lat={draft.lat} lng={draft.lng} date={draft.preferredDate} categorySlug={category?.slug} />
             <div>
               <p className="text-sm font-semibold text-ink">
                 Budget <span className="font-normal text-muted">(optional, in rupees)</span>
               </p>
               <p className="text-[0.82rem] text-muted">Leave empty to let providers suggest a price.</p>
+              <div className="mt-3">
+                <PriceGuide categorySlug={category?.slug} onUse={(low, high) => setDraft((d) => ({ ...d, budgetMin: String(low), budgetMax: String(high) }))} />
+              </div>
               <div className="mt-2 grid gap-4 sm:grid-cols-2">
                 <Field label="Minimum" error={errors.budgetMin}>
                   {(p) => <Input {...p} type="number" inputMode="numeric" min="0" step="100" value={draft.budgetMin} onChange={set('budgetMin')} placeholder="1000" />}
